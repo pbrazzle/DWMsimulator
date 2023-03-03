@@ -12,12 +12,13 @@ total_energy = 0
 total_cycles = 0
 
 def get_address(address):
+    '''Returns the DBC and row position for a given address'''
     DBC_number = floor(address / 32)
     row_number = address % 32
     return DBC_number, row_number
 
 def call_DBC(dbc, row_number, operation, nanowire_start_pos, nanowire_end_pos, d=None):
-
+    #Is operation a string or int?
     if operation == 'overwrite':
         param = dbc.controller(row_number, operation, nanowire_start_pos, nanowire_end_pos, d)
         return param
