@@ -3,63 +3,17 @@ This is the script that uses the DWM simulator to run differrent algorithm.
 '''
 import SubByte as SB
 from main_controller import DBC
+
+from math import floor
+
 # Calculate Cycle and Energy
 total_energy = 0
 total_cycles = 0
 
 def get_adress(address):
-
-    if address <= 31:
-        DBC_number = 0
-        row_number = address
-    elif address >= 32 and address <= 63:
-        DBC_number = 1
-        row_number = address - 32
-    elif address >= 64 and address <= 95:
-        DBC_number = 2
-        row_number = address - 64
-    elif address >= 96 and address <= 127:
-        DBC_number = 3
-        row_number = address - 96
-    elif address >= 128 and address <= 159:
-        DBC_number = 4
-        row_number = address - 128
-    elif address >= 160 and address <= 191:
-        DBC_number = 5
-        row_number = address - 160
-    elif address >= 192 and address <= 223:
-        DBC_number = 6
-        row_number = address - 192
-    elif address >= 224 and address <= 255:
-        DBC_number = 7
-        row_number = address - 224
-    elif address >= 256 and address <= 287:
-        DBC_number = 8
-        row_number = address - 256
-    elif address >= 288 and address <= 319:
-        DBC_number = 9
-        row_number = address - 288
-    elif address >= 320 and address <= 351:
-        DBC_number = 10
-        row_number = address - 320
-    elif address >= 352 and address <= 383:
-        DBC_number = 11
-        row_number = address - 352
-    elif address >= 384 and address <= 415:
-        DBC_number = 12
-        row_number = address - 384
-    elif address >= 416 and address <= 447:
-        DBC_number = 13
-        row_number = address - 416
-    elif address >= 448 and address <= 479:
-        DBC_number = 14
-        row_number = address - 448
-    elif address >= 480 and address <= 511:
-        DBC_number = 15
-        row_number = address - 480
-
+    DBC_number = floor(address / 32)
+    row_number = address % 32
     return DBC_number, row_number
-
 
 def call_DBC(dbc, row_number, operation, nanowire_start_pos, nanowire_end_pos, d=None):
 
@@ -77,7 +31,6 @@ def call_DBC(dbc, row_number, operation, nanowire_start_pos, nanowire_end_pos, d
         param, data = dbc.controller(row_number, operation, nanowire_start_pos, nanowire_end_pos)
         return param, data
 
-
 def write_type(dbcs, row_number_destination, write_type, nanowire_num_start_pos, nanowire_num_end_pos, data_hex):
     # print('write_type',write_type, nanowire_num_start_pos, nanowire_num_end_pos, data_hex)
     write_type = int(write_type)
@@ -91,19 +44,12 @@ def write_type(dbcs, row_number_destination, write_type, nanowire_num_start_pos,
 
     elif write_type == 7:
         raise Exception("Sorry, no operation for seven")
-
-
     return  param
-
-
-
-##############################################################################################################################################################################################################################
 
 # Parameter Table
 perform_param = dict()
 keys = ['write','TR_writes', 'read', 'TR_reads', 'shift', 'STORE']
 perform_param = {key: 0 for key in keys}
-
 
 # Creating 16 DBC objects
 dbcs = [DBC() for i in range(16)]
@@ -170,10 +116,6 @@ for line in lines:
             N = 128 - len(data_hex)
             data_hex = data_hex.ljust(N + len(data_hex), '0')
 
-
-
-
-
         # instructions for CPIM operations
         if instruction_line[0] == 'CPIM':
             if instruction_line[3] == 'COPY':
@@ -214,8 +156,6 @@ for line in lines:
                 perform_param['shift'] += param_table['shift']
                 perform_param['STORE'] += param_table['STORE']
 
-
-
                 param_table = write_type(dbcs[DBC_number_destinantion], row_number_destination, instruction_line[5], 0, 511, data_hex)
                 perform_param['write'] += param_table['write']
                 perform_param['TR_writes'] += param_table['TR_writes']
@@ -235,7 +175,6 @@ for line in lines:
                 perform_param['shift'] += param_table['shift']
                 perform_param['STORE'] += param_table['STORE']
 
-
                 param_table = write_type(dbcs[DBC_number_destinantion], row_number_destination, instruction_line[5], 0, 511, data_hex)
                 perform_param['write'] += param_table['write']
                 perform_param['TR_writes'] += param_table['TR_writes']
@@ -243,7 +182,6 @@ for line in lines:
                 perform_param['TR_reads'] += param_table['TR_reads']
                 perform_param['shift'] += param_table['shift']
                 perform_param['STORE'] += param_table['STORE']
-
 
             elif instruction_line[3] == 'ADD':
                 bit_no = instruction_line[4]
@@ -259,7 +197,6 @@ for line in lines:
                 perform_param['shift'] += param_table['shift']
                 perform_param['STORE'] += param_table['STORE']
                 # print(perform_param)
-
 
                 param_table = write_type(dbcs[DBC_number_destinantion], row_number_destination, instruction_line[5], 0, 511, data_hex)
                 perform_param['write'] += param_table['write']
@@ -358,8 +295,6 @@ for line in lines:
                 perform_param['shift'] += param_table['shift']
                 perform_param['STORE'] += param_table['STORE']
 
-
-
         elif  instruction_line[0] == 'SubByte':
             # read bits
             read_bits = ''
@@ -370,8 +305,6 @@ for line in lines:
                 # convert to decimal number
                 hex_data = hex(sbox_val)
                 read_bits += (str(hex_data[2:]).zfill(2))
-
-
             # mask data_hex with zeros:
             N = 128 - len(read_bits)
             read_bits = read_bits.ljust(N + len(read_bits), '0')
@@ -384,11 +317,8 @@ for line in lines:
             perform_param['shift'] += param_table['shift']
             perform_param['STORE'] += param_table['STORE']
 
-
-
         # Close opened file
         instruction_file.close()
-
 
 total_energy += perform_param['write'] * 512* 0.1
 total_energy += perform_param['TR_writes'] * 0.3 *512
@@ -398,7 +328,6 @@ total_energy += perform_param['shift'] * 0.3 * 512
 total_energy += perform_param['STORE'] * 0
 total_energy += perform_param['TR_reads'] * 0.000958797 * 512 #TODO: check pim energy
 
-
 total_cycles += perform_param['write'] * (9+4+4+4)
 total_cycles += perform_param['TR_writes'] * (2+9+4+4+4)
 total_cycles += perform_param['read'] * (9+4+4)
@@ -406,12 +335,6 @@ total_cycles += perform_param['TR_reads'] * (9+4+4)
 total_cycles += perform_param['shift'] * 2
 total_cycles += perform_param['STORE'] * (10) #TODO: check STORE cycles
 
-
-
 print(perform_param)
 
 print('The total_cycles and  total_energy is :',total_cycles,'and', total_energy)
-
-
-
-
