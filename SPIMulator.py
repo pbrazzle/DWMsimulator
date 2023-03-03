@@ -5,12 +5,13 @@ import SubByte as SB
 from main_controller import DBC
 
 from math import floor
+import argparse
 
 # Calculate Cycle and Energy
 total_energy = 0
 total_cycles = 0
 
-def get_adress(address):
+def get_address(address):
     DBC_number = floor(address / 32)
     row_number = address % 32
     return DBC_number, row_number
@@ -46,6 +47,13 @@ def write_type(dbcs, row_number_destination, write_type, nanowire_num_start_pos,
         raise Exception("Sorry, no operation for seven")
     return  param
 
+parser = argparse.ArgumentParser(
+                description='SPIMulator: DWM Simulator')
+
+parser.add_argument('instruction_file')
+
+args = parser.parse_args()
+
 # Parameter Table
 perform_param = dict()
 keys = ['write','TR_writes', 'read', 'TR_reads', 'shift', 'STORE']
@@ -55,7 +63,7 @@ perform_param = {key: 0 for key in keys}
 dbcs = [DBC() for i in range(16)]
 
 #Reading Instruction of text file
-instruction_file = open("C:/Users/flamm/Documents/PhD Work/DRAM Simulator/AES1_fixed.txt", "r")
+instruction_file = open(args.instruction_file, 'r')
 
 # Read single line in file
 lines = instruction_file.readlines()
@@ -75,7 +83,7 @@ for line in lines:
         address_destination = instruction_line[1]
         address_destination = (address_destination.split("$", 1))
         address_destination = int(address_destination[1])
-        DBC_number_destinantion, row_number_destination = get_adress(address_destination)
+        DBC_number_destinantion, row_number_destination = get_address(address_destination)
         print('Destinantion DBC No:', DBC_number_destinantion)
         print('Destinantion Row No:', row_number_destination)
 
@@ -85,7 +93,7 @@ for line in lines:
             address_source = (address_source.split("$", 1))
             address_source = (address_source[1])
             address_source = int(address_source)
-            DBC_number_source, row_number_source = get_adress(address_source)
+            DBC_number_source, row_number_source = get_address(address_source)
             print('Source DBC No:', DBC_number_source)
             print('Source Row No:', row_number_source)
 
