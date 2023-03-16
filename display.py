@@ -1,11 +1,13 @@
 from tabulate import tabulate
-import config as config
+import config
 
 TRd_size = config.TRd_size
 def display(memory,row_number, s):
     TRd_pos = (s)
+    
+    # NN POS
     nanowire_num_start_pos = 0
-    nanowire_num_end_pos = 511
+    nanowire_num_end_pos = config.get_nanowire_size() - 1
 
     table = [['TRd', 'Row', 'Hex Data']]
 

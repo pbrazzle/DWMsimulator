@@ -1,6 +1,7 @@
 '''
 This is the script that uses the DWM simulator to run differrent algorithm.
 '''
+import config
 import SubByte as SB
 from main_controller import DBC
 
@@ -89,6 +90,9 @@ for line in lines:
         print('Destinantion Row No:', row_number_destination)
 
 
+        nanowire_num_start_pos = 0
+        nanowire_num_end_pos = config.get_nanowire_size() - 1
+
         if '$' in instruction_line[2]:
             address_source = instruction_line[2]
             address_source = (address_source.split("$", 1))
@@ -109,15 +113,9 @@ for line in lines:
             perform_param['STORE'] += param_table['STORE']
 
             data_hex = data[2:]
-            nanowire_num_start_pos = 0
-            nanowire_num_end_pos = 511
-
-
         else:
             data = instruction_line[2]
             data_hex = data[2:]
-            nanowire_num_start_pos = 0
-            nanowire_num_end_pos = 511
 
         # append trailing zeros
         if (len(data_hex) != 128):
