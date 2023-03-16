@@ -53,8 +53,11 @@ parser = argparse.ArgumentParser(
                 description='SPIMulator: DWM Simulator')
 
 parser.add_argument('instruction_file')
+parser.add_argument('-l', '--length', type=int, default=512, help='Length of the nanowire. Default is 512')
 
 args = parser.parse_args()
+
+config.read_args(args)
 
 # Parameter Table
 perform_param = dict()
