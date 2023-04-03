@@ -29,9 +29,25 @@ class DBC():
 
         self.memory = [[('0') for _ in range(self.bit_length)] for _ in range(self.memory_size)]
 
-
+    def rename_instruction(self, instruction, ap_name):
+        if instruction == 'overwrite':
+            return 'W ' + ap_name     
+        if type(instruction) == int:
+            return str(instruction)       
+        if instruction == 'Read':
+            return 'R ' + ap_name        
+        if any([x in instruction for x in ['SHL', 'SHR']]):
+            return instruction + ' ' + 'AP0'       
+        if instruction == 'CARRY':
+            return 'CARRY_' + ap_name       
+        if instruction == 'CARRYPRIME':
+            return 'CARRYPRIME_' + ap_name        
+        return instruction
 
     def controller(self, write_port, instruction, nanowire_num_start_pos = 0, nanowire_num_end_pos = 511, data_hex = None):
+        print('Controller start')
+        print(instruction)
+        
         nanowire_num_start_pos = int(nanowire_num_start_pos)
         nanowire_num_end_pos = int(nanowire_num_end_pos)
 
@@ -41,156 +57,27 @@ class DBC():
         perform_param = {key: 0 for key in keys}
 
         row_number = int(write_port)
-        # print('prev head, prev tail, row no:', self.TRd_head, self.TRd_tail, write_port)
-
-        # if instruction == 'overwrite' or instruction == 'Read':
-        if abs(self.TRd_head - row_number) < abs(self.TRd_tail - row_number) and self.TRd_head <= (self.memory_size - self.TRd_size):
-            # Move TRd_head
-            if self.TRd_head > row_number:
-                diff = self.TRd_head - row_number
-                self.TRd_head = self.TRd_head - diff
-                self.TRd_tail = self.TRd_head + DBC.TRd_size - 1
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 1 * diff
-                perform_param['STORE'] += 0
-
-
-
-            elif self.TRd_head < row_number:
-                diff = row_number - self.TRd_head
-                self.TRd_head = self.TRd_head + diff
-                self.TRd_tail = self.TRd_head + DBC.TRd_size - 1
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 1 * diff
-                perform_param['STORE'] += 0
-
-            else:
-                self.TRd_head = row_number
-                self.TRd_tail = self.TRd_head + DBC.TRd_size - 1
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 0
-                perform_param['STORE'] += 0
-
-
-            self.TRd_head = int(self.TRd_head)
-            self.TRd_tail = int(self.TRd_tail)
-            # Call read or write at AP0
-            if instruction == 'overwrite':
-                instruction = 'W AP0'
-            elif type(instruction) == int:
-                instruction = str(instruction)
-            elif instruction == 'Read':
-                instruction = 'R AP0'
-            elif 'SHL' in instruction or 'SHR' in instruction:
-                instruction = instruction + ' ' +'AP0'
-            elif instruction == 'CARRY':
-                instruction = 'CARRY_AP0'
-            elif instruction == 'CARRYPRIME':
-                instruction = 'CARRYPRIME_AP0'
-
-
-
-
-        elif abs(self.TRd_head - row_number) > abs(self.TRd_tail - row_number) and self.TRd_tail >= (self.TRd_size-1):
-            # Move TRd_tail
-            if self.TRd_tail > row_number:
-                diff = self.TRd_tail - row_number
-                self.TRd_tail = self.TRd_tail - diff
-                self.TRd_head = self.TRd_tail - DBC.TRd_size + 1
-
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 1 * diff
-                perform_param['STORE'] += 0
-
-            elif self.TRd_tail < row_number:
-                diff = row_number - self.TRd_tail
-                self.TRd_tail = self.TRd_tail + diff
-                self.TRd_head = self.TRd_tail - DBC.TRd_size + 1
-
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 1 * diff
-                perform_param['STORE'] += 0
-
-            else:
-                self.TRd_tail = row_number
-                self.TRd_head = self.TRd_tail - DBC.TRd_size + 1
-
-                ## performance parameters
-                perform_param['write'] += 0
-                perform_param['TR_writes'] += 0
-                perform_param['read'] += 0
-                perform_param['TR_reads'] += 0
-                perform_param['shift'] += 0
-                perform_param['STORE'] += 0
-
-
-            self.TRd_head = int(self.TRd_head)
-            self.TRd_tail = int(self.TRd_tail)
-            # Call read or write at AP1
-            if instruction == 'overwrite':
-                instruction = 'W AP1'
-            elif type(instruction) == int:
-                instruction = str(instruction)
-            elif instruction == 'Read':
-                instruction = 'R AP1'
-            elif 'SHL' or 'SHR' in instruction:
-                instruction = instruction + ' ' + 'AP1'
-            elif instruction == 'CARRY':
-                instruction = 'CARRY_AP1'
-            elif instruction == 'CARRYPRIME':
-                instruction = 'CARRYPRIME_AP1'
-
-
-        elif abs(self.TRd_head - row_number) == abs(self.TRd_tail - row_number):
-            # if equal distance from AP0 and AP1 choose AP0
-            diff = self.TRd_head - row_number
-            # Cycles for shift
-            cycles = + (diff * 2)
-            self.TRd_head = self.TRd_head - diff
-            self.TRd_tail = self.TRd_head + DBC.TRd_size - 1
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 1 * diff
-            perform_param['STORE'] += 0
-
-
-            # Call read or write at AP0
-            if instruction == 'overwrite':
-                instruction = 'W AP0'
-            elif instruction == 'Read':
-                instruction = 'R AP0'
-            elif 'SHL' or 'SHR' in instruction:
-                instruction = instruction + ' ' + 'AP0'
-            elif instruction == 'CARRY':
-                instruction = 'CARRY_AP0'
-            elif instruction == 'CARRYPRIME':
-                instruction = 'CARRYPRIME_AP0'
-
-
+        
+        ap0_distance = abs(self.TRd_head - row_number)
+        ap1_distance = abs(self.TRd_tail - row_number)
+        
+        #Choose AP0
+        if (ap0_distance <= ap1_distance and row_number <= (self.memory_size - self.TRd_size)) or row_number < self.TRd_size:   
+            perform_param['shift'] += abs(self.TRd_head - row_number)
+            self.TRd_head = row_number
+            self.TRd_tail = row_number + DBC.TRd_size - 1
+                
+            instruction = self.rename_instruction(instruction, 'AP0')
+        #Choose AP1
+        else:
+            perform_param['shift'] += abs(self.TRd_tail - row_number)
+            self.TRd_tail = row_number
+            self.TRd_head = row_number - DBC.TRd_size + 1
+               
+            instruction = self.rename_instruction(instruction, 'AP1')
+        
+        print('Rename?')
+        print(instruction)
 
         if data_hex != None:
             # Convert hex data to bin
@@ -230,7 +117,7 @@ class DBC():
             perform_param['STORE'] += 0
 
             return perform_param
-
+            
         if (instruction == 'W AP0' ):
             # overwrite at left side (TRd start position)
 
@@ -543,6 +430,7 @@ class DBC():
 
         # Logic Operations
         elif (instruction == 'AND'):
+            print('Performing AND')
             Local_buffer = logicop.And(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
 
             ## performance parameters
