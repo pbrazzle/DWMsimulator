@@ -45,12 +45,8 @@ class DBC():
         return instruction
 
     def controller(self, write_port, instruction, nanowire_num_start_pos = 0, nanowire_num_end_pos = 511, data_hex = None):
-        print('Controller start')
-        print(instruction)
-        
         nanowire_num_start_pos = int(nanowire_num_start_pos)
         nanowire_num_end_pos = int(nanowire_num_end_pos)
-
 
         perform_param = dict()
         keys = ['write', 'TR_writes', 'read', 'TR_reads', 'shift', 'STORE']
@@ -75,9 +71,6 @@ class DBC():
             self.TRd_head = row_number - DBC.TRd_size + 1
                
             instruction = self.rename_instruction(instruction, 'AP1')
-        
-        print('Rename?')
-        print(instruction)
 
         if data_hex != None:
             # Convert hex data to bin
@@ -91,115 +84,55 @@ class DBC():
         # # Write instruction
         if (instruction == '1'):
             self.TRd_head = row_number
-            # write at (left) TRd start loc and shift data right within the TRd space
             adt.writezero(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
             perform_param['TR_writes'] += (1)
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param
-
         elif (instruction == '2'):
             self.TRd_head = row_number - DBC.TRd_size
             self.TRd_tail = row_number
-            # write at (right) TRd end loc and shift data left within the TRd space.
-            adt.writeone(self.memory, self.TRd_tail, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 1
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
-            return perform_param
             
+            adt.writeone(self.memory, self.TRd_tail, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
+            perform_param['TR_writes'] += 1
+
+            return perform_param            
         if (instruction == 'W AP0' ):
             # overwrite at left side (TRd start position)
-
             adt.overwrite_zero(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
             perform_param['write'] += 1
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param
-
         elif (instruction == 'W AP1'):
             # overwrite at right side(TRd end position)
             # print('overwrite', self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
             adt.overwrite_one(self.memory, self.TRd_tail, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
             perform_param['write'] += 1
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param
-
         elif (instruction == '3'):
             #TODO: fix write extremity write count
             # write at (left) TRd start and shift data towards the left padding.
             adt.writezero_shiftLE(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
             perform_param['TR_writes'] += 1
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param
-
         elif (instruction == '4'):
             # write at (left) TRd start and shift data towards the right padding.
             adt.writezero_shiftRE(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
             perform_param['TR_writes'] += (1)
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
+            
             return perform_param
-
         elif (instruction == '5'):
             # write at (right) TRd end and shift data towards left padding.
             adt.writeone_shiftLE(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
             perform_param['TR_writes'] += 1
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param
-
         elif (instruction == '6'):
             # write at (right) TRd end and shift data towards right padding.
             adt.writeone_shiftRE(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos, DBC.Local_row_buffer)
-            ## performance parameters
-            perform_param['write'] += 0
             perform_param['TR_writes'] += 1
-            perform_param['read'] += 0
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param
-
-
         #Logical shift
         elif ('SHL' in instruction):
             command = (instruction.rsplit(' ', 2))
@@ -209,20 +142,14 @@ class DBC():
                 for i in range(n, self.bit_length):
                     DBC.Local_row_buffer[local_buffer_count] = self.memory[self.TRd_head][i]
                     local_buffer_count += 1
-
-
-
                 for i in range(local_buffer_count, self.bit_length):
                     DBC.Local_row_buffer[i] = '0'
-
             else:
                 for i in range(n, self.bit_length):
                     DBC.Local_row_buffer[local_buffer_count] = self.memory[self.TRd_tail][i]
                     local_buffer_count += 1
                 for i in range(local_buffer_count, self.bit_length):
                     DBC.Local_row_buffer[i] = '0'
-
-
 
             # Converting binary data at TRd head to Hex for verification/visualization
             count = 0
@@ -238,22 +165,9 @@ class DBC():
                     hex_num += (string_hex_num)
                     s = ''
                     count = 0
-
-            # print("local Buffer :", (hex_num))
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
             perform_param['read'] += 1
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param, hex_num
-
-
-
-
         elif ('SHR' in instruction):
             command = (instruction.rsplit(' ', 2))
             n = int(command[1])
@@ -266,7 +180,6 @@ class DBC():
                 for i in range(0, self.bit_length-n):
                     DBC.Local_row_buffer[local_buffer_count] = self.memory[self.TRd_head][i]
                     local_buffer_count += 1
-
             else:
                 for i in range(0, n):
                     DBC.Local_row_buffer[i] = '0'
@@ -288,29 +201,9 @@ class DBC():
                     hex_num += (string_hex_num)
                     s = ''
                     count = 0
-            # print("local Buffer :", hex_num)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
             perform_param['read'] += 1
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
 
             return perform_param, hex_num
-
-
-
-        # # shift Instructions
-        # elif (instruction == 'SR'):
-        #     self.TRd_head += 1
-        #     cycles = + 2
-        #
-        # elif (instruction == 'SL'):
-        #     self.TRd_head -= 1
-        #     cycles = + 2
-
         # Read instruction
         elif (instruction == 'R AP0' ):
             for i in range(nanowire_num_start_pos, nanowire_num_end_pos+1):
@@ -331,18 +224,8 @@ class DBC():
 
                     s = ''
                     count = 0
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
             perform_param['read'] += 1
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
-
             return perform_param, hex_num
-
         elif (instruction == 'R AP1'):
             for i in range(nanowire_num_start_pos, nanowire_num_end_pos + 1):
                 DBC.Local_row_buffer[i] = self.memory[self.TRd_tail][i]
@@ -363,195 +246,67 @@ class DBC():
                     s = ''
                     count = 0
 
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
             perform_param['read'] += 1
-            perform_param['TR_reads'] += 0
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
-
-
             return perform_param, hex_num
-
         # # Counting carry bit's
         elif (instruction == 'CARRY_AP0'):
             Local_buffer = logicop.carry(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += 1
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif (instruction == 'CARRYPRIME_AP0'):
             Local_buffer = logicop.carry_prime(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += 1
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif (instruction == 'CARRY_AP1'):
             Local_buffer = logicop.carry(self.memory, self.TRd_tail, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif (instruction == 'CARRYPRIME_AP1'):
             Local_buffer = logicop.carry_prime(self.memory, self.TRd_tail, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         # Logic Operations
         elif (instruction == 'AND'):
-            print('Performing AND')
             Local_buffer = logicop.And(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'NAND':
             Local_buffer = logicop.Nand(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'XOR':
             Local_buffer = logicop.Xor(self.memory, self.TRd_head,nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'XNOR':
             Local_buffer = logicop.Xnor(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'OR':
             Local_buffer = logicop.Or(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'NOR':
             Local_buffer = logicop.Nor(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'NOT':
             Local_buffer = logicop.Not(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
-            perform_param['write'] += 0
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += (1)
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         # Arithmatic operation (Addition and multiplication)
         elif instruction == 'ADD':
             Local_buffer = ao.addition(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
             perform_param['write'] += 15
-            perform_param['TR_writes'] += 0
-            perform_param['read'] += 0
             perform_param['TR_reads'] += 8
-            perform_param['shift'] += 0
-            perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
-
         elif instruction == 'MULT':
             Local_buffer = ao.multiply(self.memory, self.TRd_head, nanowire_num_start_pos, nanowire_num_end_pos)
-
-            ## performance parameters
             perform_param['write'] += 8+4+15
             perform_param['TR_writes'] += 6
             perform_param['read'] += 8+7
             perform_param['TR_reads'] += 3+8
             perform_param['shift'] += 8+9
-            perform_param['STORE'] += 0
-            # perform_param['write'] += 33
-            # perform_param['TR_writes'] += 7
-            # perform_param['read'] += 22
-            # perform_param['TR_reads'] += 11
-            # perform_param['shift'] += 24
-            # perform_param['STORE'] += 0
-
             return perform_param, Local_buffer
 
 
